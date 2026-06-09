@@ -9,21 +9,38 @@
         body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 15px; background-color: #f0f4f8; color: #333; text-align: center; }
         .container { max-width: 500px; margin: 0 auto; background: #fff; padding: 25px 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         h1 { font-size: 20px; color: #2c3e50; margin-bottom: 20px; }
-        .hidden { display: none; }
-        select, input[type="text"] { width: 90%; padding: 12px; font-size: 16px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; }
-        button { width: 90%; padding: 14px; margin: 8px 0; border: none; border-radius: 8px; background: #3498db; color: white; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .hidden { display: none !important; }
+        select, input[type="text"] { width: 100%; padding: 12px; font-size: 16px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; margin: 8px 0; border: none; border-radius: 8px; background: #3498db; color: white; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; box-sizing: border-box; }
         button:active { background: #2980b9; }
+        
         .choice-btn { background: #ecf0f1; color: #2c3e50; border: 1px solid #bdc3c7; }
         .choice-btn:active { background: #d5dbdb; }
+        .next-btn { background: #2ecc71; margin-top: 20px; }
+        .next-btn:active { background: #27ae60; }
+        
         .question-text { font-size: 24px; font-weight: bold; margin: 15px 0; color: #e74c3c; }
-        .context-text { font-size: 14px; color: #7f8c8d; margin-bottom: 20px; }
-        .progress { font-size: 14px; color: #95a5a6; margin-bottom: 15px; }
+        .context-text { font-size: 14px; color: #7f8c8d; margin-bottom: 20px; line-height: 1.4; }
+        .hint { font-size: 14px; color: #d35400; font-weight: bold; margin-bottom: 15px; background: #fdf2e9; padding: 8px; border-radius: 6px; }
+
+        /* 進捗・タイマー表示エリア */
+        .info-bar { display: flex; justify-content: space-between; font-size: 14px; color: #7f8c8d; margin-bottom: 8px; font-weight: bold; }
+        .progress-container { width: 100%; background: #e0e0e0; border-radius: 5px; height: 10px; margin-bottom: 20px; overflow: hidden; }
+        .progress-bar { height: 100%; background: #3498db; width: 0%; transition: width 0.3s; }
+        
+        /* フィードバック（正誤判定）エリア */
+        .feedback { font-size: 24px; font-weight: bold; margin: 10px 0 20px; }
+        .feedback.correct { color: #27ae60; }
+        .feedback.incorrect { color: #e74c3c; }
+        .feedback-details { font-size: 16px; margin-bottom: 20px; text-align: left; background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 5px solid #bdc3c7; line-height: 1.6; }
+        
         /* 結果画面のデザイン */
         .result-list { text-align: left; margin-top: 20px; border-top: 2px solid #eee; padding-top: 15px; }
-        .result-item { border-bottom: 1px solid #eee; padding: 12px 0; font-size: 14px; }
+        .result-item { border-bottom: 1px solid #eee; padding: 12px 0; font-size: 14px; line-height: 1.5; }
         .correct-mark { color: #27ae60; font-weight: bold; }
         .incorrect-mark { color: #e74c3c; font-weight: bold; }
-        .score-display { font-size: 22px; font-weight: bold; color: #2c3e50; margin-bottom: 10px; }
+        .score-display { font-size: 22px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
+        .time-display { font-size: 16px; color: #7f8c8d; margin-bottom: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -32,9 +49,10 @@
     <h1>英単語学習アプリ</h1>
     <p>出題形式を選択してください</p>
     <select id="mode">
-        <option value="write">書き（意味から英単語を入力）</option>
+        <option value="write">書き（入力：意味から英単語を入力）</option>
+        <option value="write_easy">書き（簡単：意味から英単語を選択）</option>
         <option value="read">読み（英単語から意味を選択）</option>
-        <option value="mix" selected>MIX（書き・読みランダム）</option>
+        <option value="mix" selected>MIX（全形式ランダム）</option>
     </select>
     
     <p>出題数を選択してください</p>
@@ -49,19 +67,36 @@
 </div>
 
 <div class="container hidden" id="quiz-screen">
-    <div class="progress" id="progress"></div>
-    <div id="question-container"></div>
+    <!-- タイマーと進捗バー -->
+    <div class="info-bar">
+        <span id="progress-text">第 1 問 / 全 -- 問</span>
+        <span id="timer-text">00:00</span>
+    </div>
+    <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <!-- 問題表示エリア -->
+    <div id="question-area"></div>
+
+    <!-- フィードバック（都度の正誤判定）エリア -->
+    <div id="feedback-area" class="hidden">
+        <div id="feedback-title" class="feedback"></div>
+        <div id="feedback-details" class="feedback-details"></div>
+        <button class="next-btn" onclick="nextQuestion()">次の問題へ進む</button>
+    </div>
 </div>
 
 <div class="container hidden" id="result-screen">
     <h1>学習結果</h1>
     <div class="score-display" id="score-display"></div>
-    <button onclick="location.reload()">トップに戻る</button>
+    <div class="time-display" id="final-time"></div>
+    <button onclick="location.reload()">トップに戻る（再挑戦）</button>
     <div class="result-list" id="result-list"></div>
 </div>
 
 <script>
-    // 資料から抽出した英単語データ (全79件)
+    // 資料から抽出した英単語データ (原形として登録)
     const wordList = [
         { en: "conduct", ja: "実行する、実施する", context: "conduct research" },
         { en: "per", ja: "～につき、～あたり", context: "$10 per person" },
@@ -73,10 +108,10 @@
         { en: "author", ja: "著者、作者 / (本を)書く", context: "He is a famous author." },
         { en: "committee", ja: "委員会", context: "the budget committee" },
         { en: "latest", ja: "最新の", context: "the latest news" },
-        { en: "enclosed", ja: "同封する、囲む", context: "Please fill out the enclosed form." },
+        { en: "enclose", ja: "同封する、囲む", context: "Please fill out the enclosed form." },
         { en: "expand", ja: "拡大する、拡張する、進出する", context: "expand business" },
         { en: "editor", ja: "編集者", context: "a magazine editor" },
-        { en: "funds", ja: "資金、基金 / 資金を提供する", context: "raise funds" },
+        { en: "fund", ja: "資金、基金 / 資金を提供する", context: "raise funds" },
         { en: "vehicle", ja: "乗物、車両", context: "A man is getting into a vehicle." },
         { en: "focus", ja: "～に集中させる、重点を置く / 焦点", context: "We focus on quality." },
         { en: "approve", ja: "承認する、賛成する", context: "The request has been approved." },
@@ -91,8 +126,8 @@
         { en: "employment", ja: "雇用", context: "an employment contract" },
         { en: "appreciate", ja: "感謝する、ありがたく思う", context: "I appreciate your support" },
         { en: "indicate", ja: "示す、示唆する", context: "He indicated that he was interested" },
-        { en: "references", ja: "照会先、照会状、参照", context: "provide a list of references" },
-        { en: "residents", ja: "住民、住人", context: "talk to local residents" },
+        { en: "reference", ja: "照会先、照会状、参照", context: "provide a list of references" },
+        { en: "resident", ja: "住民、住人", context: "talk to local residents" },
         { en: "individual", ja: "個人の、個別の", context: "individual products" },
         { en: "advance", ja: "先行した、事前の / 進歩、前進", context: "provide advance notice" },
         { en: "organization", ja: "団体、会社、組織(化)", context: "join an organization" },
@@ -103,7 +138,7 @@
         { en: "estimate", ja: "見積もり / 見積もる", context: "give a cost estimate" },
         { en: "publication", ja: "出版物、出版", context: "announce the publication of a new magazine" },
         { en: "unfortunately", ja: "残念なことに、残念ながら", context: "Unfortunately, the tickets are sold out." },
-        { en: "expenses", ja: "費用、経費", context: "reduce expenses" },
+        { en: "expense", ja: "費用、経費", context: "reduce expenses" },
         { en: "operation", ja: "業務、運営、操業、作動", context: "change the hours of operation" },
         { en: "exhibition", ja: "展示会、展示物、展示", context: "visit an exhibition" },
         { en: "operate", ja: "操作する、運営する", context: "operate a computer" },
@@ -116,12 +151,12 @@
         { en: "association", ja: "協会、組合", context: "join an association" },
         { en: "concern", ja: "心配、懸念、関心事", context: "What concern does the speaker express?" },
         { en: "luggage", ja: "旅行かばん、手荷物", context: "Tex lost his luggage." },
-        { en: "suggestions", ja: "提案、示唆", context: "ask for suggestions" },
+        { en: "suggestion", ja: "提案、示唆", context: "ask for suggestions" },
         { en: "launch", ja: "開始、発売 / 開始する、発売する", context: "announce the launch of a new product" },
-        { en: "procedures", ja: "手続き、手順", context: "safety procedures" },
+        { en: "procedure", ja: "手続き、手順", context: "safety procedures" },
         { en: "description", ja: "説明、記述、描写", context: "read a job description" },
         { en: "variety", ja: "種類", context: "We offer a wide variety of classes." },
-        { en: "terms", ja: "条件、期限、観点", context: "the terms of a contract" },
+        { en: "term", ja: "条件、期限、観点", context: "the terms of a contract" },
         { en: "distribute", ja: "配布する、流通させる", context: "A man is distributing some documents." },
         { en: "leading", ja: "首位の、トップの", context: "a leading accounting firm" },
         { en: "mainly", ja: "主に", context: "What is the talk mainly about?" },
@@ -132,7 +167,7 @@
         { en: "expert", ja: "専門家 / 専門的な", context: "She is a cooking expert." },
         { en: "journal", ja: "専門誌", context: "a journal article" },
         { en: "series", ja: "一連のモノ、シリーズ(モノ)", context: "watch a new television series" },
-        { en: "requirements", ja: "要求、必要条件", context: "meet the requirements for a position" },
+        { en: "requirement", ja: "要求、必要条件", context: "meet the requirements for a position" },
         { en: "assistance", ja: "支援、援助", context: "I appreciate your assistance." },
         { en: "council", ja: "議会", context: "The city council will meet tomorrow." },
         { en: "electronic", ja: "電子の、電子版の、オンラインの", context: "Please turn off any electronic equipment." },
@@ -145,9 +180,9 @@
         { en: "trail", ja: "(田舎の)小道、田舎道", context: "a hiking trail" },
         { en: "avoid", ja: "避ける", context: "avoid rush hour traffic" },
         { en: "celebration", ja: "お祝い、祝典", context: "a holiday celebration" },
-        { en: "impressed", ja: "感心させる、好印象を与える", context: "We were impressed with your work." },
+        { en: "impress", ja: "感心させる、好印象を与える", context: "We were impressed with your work." },
         { en: "seek", ja: "探し求める", context: "seek volunteers" },
-        { en: "coworkers", ja: "同僚", context: "They are my coworkers." },
+        { en: "coworker", ja: "同僚", context: "They are my coworkers." },
         { en: "extension", ja: "内線、延長", context: "Call me at extension 600." },
         { en: "postpone", ja: "延長する", context: "The meeting has been postponed." },
         { en: "region", ja: "地域", context: "travel throughout the region" },
@@ -169,12 +204,16 @@
     let currentIndex = 0;
     let results = [];
     let selectedMode = 'mix';
+    let currentResult = null; // その問題の判定結果を一時保存
+
+    // タイマー用変数
+    let startTime;
+    let timerInterval;
 
     function startGame() {
         selectedMode = document.getElementById('mode').value;
         let count = parseInt(document.getElementById('count').value);
 
-        // 配列をシャッフルして出題数を絞り込む (最大数は配列の長さに制限)
         let shuffled = [...wordList].sort(() => Math.random() - 0.5);
         currentQuestions = shuffled.slice(0, Math.min(count, wordList.length));
 
@@ -185,39 +224,92 @@
         document.getElementById('result-screen').classList.add('hidden');
         document.getElementById('quiz-screen').classList.remove('hidden');
 
+        // タイマースタート
+        startTime = new Date();
+        timerInterval = setInterval(updateTimer, 1000);
+
         showQuestion();
+    }
+
+    function updateTimer() {
+        let now = new Date();
+        let diff = Math.floor((now - startTime) / 1000);
+        let minutes = Math.floor(diff / 60);
+        let seconds = diff % 60;
+        document.getElementById('timer-text').innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function updateProgress() {
+        document.getElementById('progress-text').innerText = `第 ${currentIndex + 1} 問 / 全 ${currentQuestions.length} 問`;
+        let percent = (currentIndex / currentQuestions.length) * 100;
+        document.getElementById('progress-bar').style.width = `${percent}%`;
     }
 
     function showQuestion() {
         if (currentIndex >= currentQuestions.length) {
-            showResults();
+            finishQuiz();
             return;
         }
+
+        updateProgress();
+
+        // 表示エリアの切り替え
+        document.getElementById('question-area').classList.remove('hidden');
+        document.getElementById('feedback-area').classList.add('hidden');
 
         let q = currentQuestions[currentIndex];
         let qMode = selectedMode;
         
-        // MIXモードの場合はランダムに書き/読みを決定
+        // MIXモードの場合は、書き(入力), 書き(簡単), 読み の中からランダムで出題
         if (qMode === 'mix') {
-            qMode = Math.random() < 0.5 ? 'write' : 'read';
+            let rand = Math.random();
+            if (rand < 0.33) {
+                qMode = 'write';
+            } else if (rand < 0.66) {
+                qMode = 'write_easy';
+            } else {
+                qMode = 'read';
+            }
         }
 
-        document.getElementById('progress').innerText = `第 ${currentIndex + 1} 問 / 全 ${currentQuestions.length} 問`;
-        let container = document.getElementById('question-container');
+        let container = document.getElementById('question-area');
+        
+        // 簡易的な文脈内単語の伏せ字化処理
+        let contextRegex = new RegExp(q.en + "(d|ed|s|es|ing)?", "i");
+        let maskedContext = q.context.replace(contextRegex, '______');
 
         if (qMode === 'write') {
+            // 書き（テキスト入力）
             container.innerHTML = `
-                <p>次の意味を持つ英単語を入力してください</p>
+                <p>次の意味を持つ英単語（原形）を入力してください</p>
                 <div class="question-text">${q.ja}</div>
-                <div class="context-text">(${q.context.replace(new RegExp(q.en, 'i'), '______')})</div>
+                <div class="context-text">(${maskedContext})</div>
+                <div class="hint">💡 ヒント：頭文字は「${q.en.charAt(0)}」 （全${q.en.length}文字）</div>
                 <input type="text" id="write-answer" placeholder="英単語を入力" autocomplete="off" autocorrect="off" autocapitalize="off">
                 <button onclick="checkWriteAnswer('${q.en}', '${q.ja}')">解答する</button>
             `;
-            document.getElementById('write-answer').focus();
+            setTimeout(() => document.getElementById('write-answer').focus(), 100);
+            
+        } else if (qMode === 'write_easy') {
+            // 書き（簡単：英単語の4択）
+            let choices = [q.en];
+            let wrongChoices = wordList.filter(w => w.en !== q.en).sort(() => Math.random() - 0.5).slice(0, 3).map(w => w.en);
+            choices = choices.concat(wrongChoices).sort(() => Math.random() - 0.5);
+
+            let choicesHtml = choices.map(choice => 
+                `<button class="choice-btn" onclick="checkWriteEasyAnswer('${choice}', '${q.en}', '${q.ja}')">${choice}</button>`
+            ).join('');
+
+            container.innerHTML = `
+                <p>次の意味を持つ英単語を選択してください</p>
+                <div class="question-text">${q.ja}</div>
+                <div class="context-text">(${maskedContext})</div>
+                ${choicesHtml}
+            `;
+            
         } else {
-            // 読みモード（意味を選択）
+            // 読み（意味の4択）
             let choices = [q.ja];
-            // 不正解の選択肢を3つランダムに抽出
             let wrongChoices = wordList.filter(w => w.ja !== q.ja).sort(() => Math.random() - 0.5).slice(0, 3).map(w => w.ja);
             choices = choices.concat(wrongChoices).sort(() => Math.random() - 0.5);
 
@@ -237,21 +329,68 @@
     function checkWriteAnswer(correctEn, ja) {
         let input = document.getElementById('write-answer').value.trim().toLowerCase();
         let isCorrect = (input === correctEn.toLowerCase());
-        recordResult('書き', ja, correctEn, input, isCorrect);
+        currentResult = { type: '書き', question: ja, correct: correctEn, userAnswer: input, isCorrect: isCorrect };
+        showFeedback();
+    }
+
+    function checkWriteEasyAnswer(userChoice, correctEn, ja) {
+        let isCorrect = (userChoice === correctEn);
+        currentResult = { type: '書き(簡単)', question: ja, correct: correctEn, userAnswer: userChoice, isCorrect: isCorrect };
+        showFeedback();
     }
 
     function checkReadAnswer(userChoice, correctJa, en) {
         let isCorrect = (userChoice === correctJa);
-        recordResult('読み', en, correctJa, userChoice, isCorrect);
+        currentResult = { type: '読み', question: en, correct: correctJa, userAnswer: userChoice, isCorrect: isCorrect };
+        showFeedback();
     }
 
-    function recordResult(type, questionText, correctText, userText, isCorrect) {
-        results.push({ type, question: questionText, correct: correctText, userAnswer: userText, isCorrect });
+    function showFeedback() {
+        document.getElementById('question-area').classList.add('hidden');
+        let feedbackArea = document.getElementById('feedback-area');
+        feedbackArea.classList.remove('hidden');
+
+        let title = document.getElementById('feedback-title');
+        let details = document.getElementById('feedback-details');
+
+        if (currentResult.isCorrect) {
+            title.innerText = "◯ 正解！";
+            title.className = "feedback correct";
+        } else {
+            title.innerText = "✕ 不正解...";
+            title.className = "feedback incorrect";
+        }
+
+        if (currentResult.type.includes('書き')) {
+            // 書き(入力)、書き(簡単) の場合
+            details.innerHTML = `
+                <div><strong>意味:</strong> ${currentResult.question}</div>
+                <div style="margin-top:10px;"><strong>あなたの解答:</strong> ${currentResult.userAnswer || '(未入力)'}</div>
+                ${!currentResult.isCorrect ? `<div style="margin-top:10px; color:#27ae60;"><strong>正しい英単語:</strong> ${currentResult.correct}</div>` : ''}
+            `;
+        } else {
+            // 読み の場合
+            details.innerHTML = `
+                <div><strong>英単語:</strong> ${currentResult.question}</div>
+                <div style="margin-top:10px;"><strong>あなたの解答:</strong> ${currentResult.userAnswer}</div>
+                ${!currentResult.isCorrect ? `<div style="margin-top:10px; color:#27ae60;"><strong>正しい意味:</strong> ${currentResult.correct}</div>` : ''}
+            `;
+        }
+    }
+
+    function nextQuestion() {
+        results.push(currentResult);
         currentIndex++;
         showQuestion();
     }
 
-    function showResults() {
+    function finishQuiz() {
+        clearInterval(timerInterval); // タイマー停止
+        
+        // プログレスバーを100%にする
+        document.getElementById('progress-text').innerText = `全 ${currentQuestions.length} 問 終了！`;
+        document.getElementById('progress-bar').style.width = `100%`;
+
         document.getElementById('quiz-screen').classList.add('hidden');
         document.getElementById('result-screen').classList.remove('hidden');
 
@@ -259,6 +398,7 @@
         let accuracy = Math.round((correctCount / results.length) * 100);
 
         document.getElementById('score-display').innerText = `正答率: ${accuracy}% (${correctCount} / ${results.length}問)`;
+        document.getElementById('final-time').innerText = `クリアタイム: ${document.getElementById('timer-text').innerText}`;
 
         let resultHtml = results.map((r, index) => {
             let mark = r.isCorrect ? '<span class="correct-mark">◯ 正解</span>' : '<span class="incorrect-mark">✕ 不正解</span>';
