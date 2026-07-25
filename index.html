@@ -19,7 +19,8 @@
         .next-btn { background: #2ecc71; margin-top: 20px; }
         .next-btn:active { background: #27ae60; }
         
-        .question-text { font-size: 24px; font-weight: bold; margin: 15px 0; color: #e74c3c; }
+        .question-text { font-size: 22px; font-weight: bold; margin: 15px 0; color: #e74c3c; line-height: 1.4; }
+        .question-id { font-size: 14px; color: #7f8c8d; font-weight: normal; display: block; margin-bottom: 5px; }
         .context-text { font-size: 14px; color: #7f8c8d; margin-bottom: 20px; line-height: 1.4; }
         .hint { font-size: 14px; color: #d35400; font-weight: bold; margin-bottom: 15px; background: #fdf2e9; padding: 8px; border-radius: 6px; }
 
@@ -47,6 +48,14 @@
 
 <div class="container" id="setup-screen">
     <h1>英単語学習アプリ</h1>
+
+    <p>出題範囲を選択してください</p>
+    <select id="range">
+        <option value="fm">前期中間 (英表単語_FM No.481-580)</option>
+        <option value="ff">前期期末 (英表単語_FF No.601-700)</option>
+        <option value="all" selected>全範囲 (No.481-700)</option>
+    </select>
+
     <p>出題形式を選択してください</p>
     <select id="mode">
         <option value="write">書き（入力：意味から英単語を入力）</option>
@@ -96,126 +105,241 @@
 </div>
 
 <script>
-    // 資料から抽出した英単語データ (原形として登録)
-    const wordList = [
-        { en: "conduct", ja: "実行する、実施する", context: "conduct research" },
-        { en: "per", ja: "～につき、～あたり", context: "$10 per person" },
-        { en: "representative", ja: "担当者、代表者", context: "talk to a representative" },
-        { en: "proposal", ja: "提案", context: "a project proposal" },
-        { en: "corporate", ja: "企業の、法人の", context: "a corporate event" },
-        { en: "gallery", ja: "美術館、画廊", context: "visit a gallery" },
-        { en: "encourage", ja: "奨励する、促す", context: "What are listeners encouraged to do?" },
-        { en: "author", ja: "著者、作者 / (本を)書く", context: "He is a famous author." },
-        { en: "committee", ja: "委員会", context: "the budget committee" },
-        { en: "latest", ja: "最新の", context: "the latest news" },
-        { en: "enclose", ja: "同封する、囲む", context: "Please fill out the enclosed form." },
-        { en: "expand", ja: "拡大する、拡張する、進出する", context: "expand business" },
-        { en: "editor", ja: "編集者", context: "a magazine editor" },
-        { en: "fund", ja: "資金、基金 / 資金を提供する", context: "raise funds" },
-        { en: "vehicle", ja: "乗物、車両", context: "A man is getting into a vehicle." },
-        { en: "focus", ja: "～に集中させる、重点を置く / 焦点", context: "We focus on quality." },
-        { en: "approve", ja: "承認する、賛成する", context: "The request has been approved." },
-        { en: "sponsor", ja: "スポンサーになる、後援する / スポンサー", context: "sponsor an event" },
-        { en: "previous", ja: "前の、以前の", context: "previous work experience" },
-        { en: "reception", ja: "パーティー、受付", context: "attend a reception" },
-        { en: "property", ja: "不動産、資産", context: "purchase a property" },
-        { en: "campaign", ja: "キャンペーン", context: "start a marketing campaign" },
-        { en: "replacement", ja: "後任、交換、交換品", context: "send a replacement" },
-        { en: "organize", ja: "とりまとめる、組織化する、整理する", context: "organize a meeting" },
-        { en: "competition", ja: "大会、競争、競争相手", context: "enter a competition" },
-        { en: "employment", ja: "雇用", context: "an employment contract" },
-        { en: "appreciate", ja: "感謝する、ありがたく思う", context: "I appreciate your support" },
-        { en: "indicate", ja: "示す、示唆する", context: "He indicated that he was interested" },
-        { en: "reference", ja: "照会先、照会状、参照", context: "provide a list of references" },
-        { en: "resident", ja: "住民、住人", context: "talk to local residents" },
-        { en: "individual", ja: "個人の、個別の", context: "individual products" },
-        { en: "advance", ja: "先行した、事前の / 進歩、前進", context: "provide advance notice" },
-        { en: "organization", ja: "団体、会社、組織(化)", context: "join an organization" },
-        { en: "remind", ja: "再確認する、念押しする", context: "remind a patient about an appointment" },
-        { en: "section", ja: "一部、コーナー、欄、章", context: "read the community news section" },
-        { en: "senior", ja: "(役職などが)上級の、上位の", context: "He is a senior sales manager." },
-        { en: "technical", ja: "技術的な", context: "ask for technical support" },
-        { en: "estimate", ja: "見積もり / 見積もる", context: "give a cost estimate" },
-        { en: "publication", ja: "出版物、出版", context: "announce the publication of a new magazine" },
-        { en: "unfortunately", ja: "残念なことに、残念ながら", context: "Unfortunately, the tickets are sold out." },
-        { en: "expense", ja: "費用、経費", context: "reduce expenses" },
-        { en: "operation", ja: "業務、運営、操業、作動", context: "change the hours of operation" },
-        { en: "exhibition", ja: "展示会、展示物、展示", context: "visit an exhibition" },
-        { en: "operate", ja: "操作する、運営する", context: "operate a computer" },
-        { en: "original", ja: "元の、最初の / オリジナル、原本", context: "50% off the original" },
-        { en: "receipt", ja: "領収書、受取", context: "Tex has lost the receipt" },
-        { en: "division", ja: "部門、配分、分担", context: "He is the division manager." },
-        { en: "photography", ja: "写真撮影", context: "run a photography studio" },
-        { en: "reschedule", ja: "スケジュール変更する", context: "reschedule an appointment with a doctor" },
-        { en: "stock", ja: "在庫、株", context: "The product is out of stock." },
-        { en: "association", ja: "協会、組合", context: "join an association" },
-        { en: "concern", ja: "心配、懸念、関心事", context: "What concern does the speaker express?" },
-        { en: "luggage", ja: "旅行かばん、手荷物", context: "Tex lost his luggage." },
-        { en: "suggestion", ja: "提案、示唆", context: "ask for suggestions" },
-        { en: "launch", ja: "開始、発売 / 開始する、発売する", context: "announce the launch of a new product" },
-        { en: "procedure", ja: "手続き、手順", context: "safety procedures" },
-        { en: "description", ja: "説明、記述、描写", context: "read a job description" },
-        { en: "variety", ja: "種類", context: "We offer a wide variety of classes." },
-        { en: "term", ja: "条件、期限、観点", context: "the terms of a contract" },
-        { en: "distribute", ja: "配布する、流通させる", context: "A man is distributing some documents." },
-        { en: "leading", ja: "首位の、トップの", context: "a leading accounting firm" },
-        { en: "mainly", ja: "主に", context: "What is the talk mainly about?" },
-        { en: "release", ja: "発売する、公表する / 発売", context: "release a new model" },
-        { en: "response", ja: "返答、返事", context: "I need your response by Friday." },
-        { en: "retire", ja: "退職する", context: "He will retire on March 30." },
-        { en: "determine", ja: "決定する、判断する、決心する", context: "determine which way to go" },
-        { en: "expert", ja: "専門家 / 専門的な", context: "She is a cooking expert." },
-        { en: "journal", ja: "専門誌", context: "a journal article" },
-        { en: "series", ja: "一連のモノ、シリーズ(モノ)", context: "watch a new television series" },
-        { en: "requirement", ja: "要求、必要条件", context: "meet the requirements for a position" },
-        { en: "assistance", ja: "支援、援助", context: "I appreciate your assistance." },
-        { en: "council", ja: "議会", context: "The city council will meet tomorrow." },
-        { en: "electronic", ja: "電子の、電子版の、オンラインの", context: "Please turn off any electronic equipment." },
-        { en: "recommendation", ja: "推薦", context: "write a letter of recommendation" },
-        { en: "attract", ja: "引き付ける、呼び込む、誘致する", context: "attract new readers" },
-        { en: "quarter", ja: "四半期", context: "sales in the first quarter" },
-        { en: "promotion", ja: "昇進、販売促進、促進", context: "receive a promotion" },
-        { en: "concerned", ja: "心配して", context: "What is the man concerned about?" },
-        { en: "extend", ja: "延長する", context: "extend business hours" },
-        { en: "trail", ja: "(田舎の)小道、田舎道", context: "a hiking trail" },
-        { en: "avoid", ja: "避ける", context: "avoid rush hour traffic" },
-        { en: "celebration", ja: "お祝い、祝典", context: "a holiday celebration" },
-        { en: "impress", ja: "感心させる、好印象を与える", context: "We were impressed with your work." },
-        { en: "seek", ja: "探し求める", context: "seek volunteers" },
-        { en: "coworker", ja: "同僚", context: "They are my coworkers." },
-        { en: "extension", ja: "内線、延長", context: "Call me at extension 600." },
-        { en: "postpone", ja: "延長する", context: "The meeting has been postponed." },
-        { en: "region", ja: "地域", context: "travel throughout the region" },
-        { en: "range", ja: "範囲 / 範囲にわたる", context: "offer a broad range of services" },
-        { en: "convention", ja: "会議", context: "speak at a medical convention" },
-        { en: "solution", ja: "解決策、溶液", context: "suggest a solution" },
-        { en: "according to", ja: "～によると、～に従って", context: "according to Mr. Kato" },
-        { en: "affect", ja: "影響する", context: "affect the schedule" },
-        { en: "commercial", ja: "商業(用)の、商業的な / CM", context: "for commercial purposes" },
-        { en: "convenient", ja: "便利な、都合の良い", context: "convenient location" },
-        { en: "exchange", ja: "交換する / 交換", context: "exchange a ticket" },
-        { en: "artwork", ja: "芸術作品", context: "buy an artwork by Picasso" },
-        { en: "agreement", ja: "契約(書)、同意(書)、合意", context: "sign an agreement" },
-        { en: "government", ja: "政府", context: "meet a government official" },
-        { en: "major", ja: "主要な、大きな、重大な", context: "a major reason" }
+    // --- 前期中間 (英表単語_FM, No.481-580) ---
+    const fmWords = [
+        { id: 481, en: "conduct", ja: "実行する、実施する", context: "conduct research" },
+        { id: 482, en: "per", ja: "～につき、～あたり", context: "$10 per person" },
+        { id: 483, en: "representative", ja: "担当者、代表者", context: "talk to a representative" },
+        { id: 484, en: "proposal", ja: "提案", context: "a project proposal" },
+        { id: 485, en: "corporate", ja: "企業の、法人の", context: "a corporate event" },
+        { id: 486, en: "gallery", ja: "美術館、画廊", context: "visit a gallery" },
+        { id: 487, en: "encourage", ja: "奨励する、促す", context: "What are listeners encouraged to do?" },
+        { id: 488, en: "author", ja: "著者、作者、(本を)書く", context: "He is a famous author." },
+        { id: 489, en: "committee", ja: "委員会", context: "the budget committee" },
+        { id: 490, en: "latest", ja: "最新の", context: "the latest news" },
+        { id: 491, en: "enclose", ja: "同封する、囲む", context: "Please fill out the enclosed form." },
+        { id: 492, en: "expand", ja: "拡大する、拡張する、進出する", context: "expand business" },
+        { id: 493, en: "editor", ja: "編集者", context: "a magazine editor" },
+        { id: 494, en: "fund", ja: "資金、基金、資金を提供する", context: "raise funds" },
+        { id: 495, en: "vehicle", ja: "乗物、車両", context: "A man is getting into a vehicle." },
+        { id: 496, en: "focus", ja: "～に集中させる、重点を置く、焦点", context: "We focus on quality." },
+        { id: 497, en: "approve", ja: "承認する、賛成する", context: "The request has been approved." },
+        { id: 498, en: "sponsor", ja: "スポンサーになる、後援する、スポンサー", context: "sponsor an event" },
+        { id: 499, en: "previous", ja: "前の、以前の", context: "previous work experience" },
+        { id: 500, en: "reception", ja: "パーティー、受付", context: "attend a reception" },
+        { id: 501, en: "property", ja: "不動産、資産", context: "purchase a property" },
+        { id: 502, en: "campaign", ja: "キャンペーン", context: "start a marketing campaign" },
+        { id: 503, en: "replacement", ja: "後任、交換、交換品", context: "send a replacement" },
+        { id: 504, en: "organize", ja: "とりまとめる、組織化する、整理する", context: "organize a meeting" },
+        { id: 505, en: "competition", ja: "大会、競争、競争相手", context: "enter a competition" },
+        { id: 506, en: "employment", ja: "雇用", context: "an employment contract" },
+        { id: 507, en: "appreciate", ja: "感謝する、ありがたく思う", context: "I appreciate your support" },
+        { id: 508, en: "indicate", ja: "示す、示唆する", context: "He indicated that he was interested" },
+        { id: 509, en: "reference", ja: "照会先、照会状、参照", context: "provide a list of references" },
+        { id: 510, en: "resident", ja: "住民、住人", context: "talk to local residents" },
+        { id: 511, en: "individual", ja: "個人の、個別の", context: "individual products" },
+        { id: 512, en: "advance", ja: "先行した、事前の、進歩、前進", context: "provide advance notice" },
+        { id: 513, en: "organization", ja: "団体、会社、組織(化)", context: "join an organization" },
+        { id: 514, en: "remind", ja: "再確認する、念押しする", context: "remind a patient about an appointment" },
+        { id: 515, en: "section", ja: "一部、コーナー、欄、章", context: "read the community news section" },
+        { id: 516, en: "senior", ja: "(役職などが)上級の、上位の", context: "He is a senior sales manager." },
+        { id: 517, en: "technical", ja: "技術的な", context: "ask for technical support" },
+        { id: 518, en: "estimate", ja: "見積もり、見積もる", context: "give a cost estimate" },
+        { id: 519, en: "publication", ja: "出版物、出版", context: "announce the publication of a new magazine" },
+        { id: 520, en: "unfortunately", ja: "残念なことに、残念ながら", context: "Unfortunately, the tickets are sold out." },
+        { id: 521, en: "expense", ja: "費用、経費", context: "reduce expenses" },
+        { id: 522, en: "operation", ja: "業務、運営、操業、作動", context: "change the hours of operation" },
+        { id: 523, en: "exhibition", ja: "展示会、展示物、展示", context: "visit an exhibition" },
+        { id: 524, en: "operate", ja: "操作する、運営する", context: "operate a computer" },
+        { id: 525, en: "original", ja: "元の、最初の、オリジナル、原本", context: "50% off the original" },
+        { id: 526, en: "receipt", ja: "領収書、受取", context: "Tex has lost the receipt" },
+        { id: 527, en: "division", ja: "部門、配分、分担", context: "He is the division manager." },
+        { id: 528, en: "photography", ja: "写真撮影", context: "run a photography studio" },
+        { id: 529, en: "reschedule", ja: "スケジュール変更する", context: "reschedule an appointment with a doctor" },
+        { id: 530, en: "stock", ja: "在庫、株", context: "The product is out of stock." },
+        { id: 531, en: "association", ja: "協会、組合", context: "join an association" },
+        { id: 532, en: "concern", ja: "心配、懸念、関心事", context: "What concern does the speaker express?" },
+        { id: 533, en: "luggage", ja: "旅行かばん、手荷物", context: "Tex lost his luggage." },
+        { id: 534, en: "suggestion", ja: "提案、示唆", context: "ask for suggestions" },
+        { id: 535, en: "launch", ja: "開始、発売、開始する、発売する", context: "announce the launch of a new product" },
+        { id: 536, en: "procedure", ja: "手続き、手順", context: "safety procedures" },
+        { id: 537, en: "description", ja: "説明、記述、描写", context: "read a job description" },
+        { id: 538, en: "variety", ja: "種類", context: "We offer a wide variety of classes." },
+        { id: 539, en: "term", ja: "条件、期限、観点", context: "the terms of a contract" },
+        { id: 540, en: "distribute", ja: "配布する、流通させる", context: "A man is distributing some documents." },
+        { id: 541, en: "leading", ja: "首位の、トップの", context: "a leading accounting firm" },
+        { id: 542, en: "mainly", ja: "主に", context: "What is the talk mainly about?" },
+        { id: 543, en: "release", ja: "発売する、公表する、発売", context: "release a new model" },
+        { id: 544, en: "response", ja: "返答、返事", context: "I need your response by Friday." },
+        { id: 545, en: "retire", ja: "退職する", context: "He will retire on March 30." },
+        { id: 546, en: "determine", ja: "決定する、判断する、決心する", context: "determine which way to go" },
+        { id: 547, en: "expert", ja: "専門家、専門的な", context: "She is a cooking expert." },
+        { id: 548, en: "journal", ja: "専門誌", context: "a journal article" },
+        { id: 549, en: "series", ja: "一連のモノ、シリーズ(モノ)", context: "watch a new television series" },
+        { id: 550, en: "requirement", ja: "要求、必要条件", context: "meet the requirements for a position" },
+        { id: 551, en: "assistance", ja: "支援、援助", context: "I appreciate your assistance." },
+        { id: 552, en: "council", ja: "議会", context: "The city council will meet tomorrow." },
+        { id: 553, en: "electronic", ja: "電子の、電子版の、オンラインの", context: "Please turn off any electronic equipment." },
+        { id: 554, en: "recommendation", ja: "推薦", context: "write a letter of recommendation" },
+        { id: 555, en: "attract", ja: "引き付ける、呼び込む、誘致する", context: "attract new readers" },
+        { id: 556, en: "quarter", ja: "四半期", context: "sales in the first quarter" },
+        { id: 557, en: "promotion", ja: "昇進、販売促進、促進", context: "receive a promotion" },
+        { id: 558, en: "concerned", ja: "心配して", context: "What is the man concerned about?" },
+        { id: 559, en: "extend", ja: "延長する、(気持ちを)表す", context: "extend business hours" },
+        { id: 560, en: "trail", ja: "(田舎の)小道、田舎道", context: "a hiking trail" },
+        { id: 561, en: "avoid", ja: "避ける", context: "avoid rush hour traffic" },
+        { id: 562, en: "celebration", ja: "お祝い、祝典", context: "a holiday celebration" },
+        { id: 563, en: "impress", ja: "感心させる、好印象を与える", context: "We were impressed with your work." },
+        { id: 564, en: "seek", ja: "探し求める", context: "seek volunteers" },
+        { id: 565, en: "coworker", ja: "同僚", context: "They are my coworkers." },
+        { id: 566, en: "extension", ja: "内線、延長", context: "Call me at extension 600." },
+        { id: 567, en: "postpone", ja: "延長する", context: "The meeting has been postponed." },
+        { id: 568, en: "region", ja: "地域", context: "travel throughout the region" },
+        { id: 569, en: "range", ja: "範囲、範囲にわたる", context: "offer a broad range of services" },
+        { id: 570, en: "convention", ja: "会議", context: "speak at a medical convention" },
+        { id: 571, en: "solution", ja: "解決策、溶液", context: "suggest a solution" },
+        { id: 572, en: "according to", ja: "～によると、～に従って", context: "according to Mr. Kato" },
+        { id: 573, en: "affect", ja: "影響する", context: "affect the schedule" },
+        { id: 574, en: "commercial", ja: "商業(用)の、商業的な、CM", context: "for commercial purposes" },
+        { id: 575, en: "convenient", ja: "便利な、都合の良い", context: "convenient location" },
+        { id: 576, en: "exchange", ja: "交換する、交換", context: "exchange a ticket" },
+        { id: 577, en: "artwork", ja: "芸術作品、(イラストや写真)", context: "buy an artwork by Picasso" },
+        { id: 578, en: "agreement", ja: "契約(書)、同意(書)、合意", context: "sign an agreement" },
+        { id: 579, en: "government", ja: "政府", context: "meet a government official" },
+        { id: 580, en: "major", ja: "主要な、大きな、重大な", context: "a major reason" }
+    ];
+
+    // --- 前期期末 (英表単語_FF, No.601-700) ---
+    const ffWords = [
+        { id: 601, en: "demonstrate", ja: "実演する、明示する", context: "New products will be demonstrated." },
+        { id: 602, en: "efficient", ja: "効率的な", context: "The new system is very efficient." },
+        { id: 603, en: "overseas", ja: "海外の", context: "an overseas branch" },
+        { id: 604, en: "status", ja: "状況、地位", context: "the status of an order" },
+        { id: 605, en: "establish", ja: "設立する、創立する、確立する", context: "establish a company" },
+        { id: 606, en: "regulation", ja: "規制、規則", context: "follow safety regulations" },
+        { id: 607, en: "traditional", ja: "伝統的な、昔のままの", context: "traditional music" },
+        { id: 608, en: "deposit", ja: "頭金、敷金、保証金", context: "pay a deposit of $100" },
+        { id: 609, en: "newly", ja: "新しく", context: "a newly opened store" },
+        { id: 610, en: "legal", ja: "法律に関する、合法の", context: "give legal advice" },
+        { id: 611, en: "compete", ja: "競う", context: "compete with other businesses" },
+        { id: 612, en: "mayor", ja: "町長、市長", context: "the mayor of Tex City" },
+        { id: 613, en: "quantity", ja: "量、数量", context: "order a large quantity" },
+        { id: 614, en: "departure", ja: "出発", context: "change a departure date" },
+        { id: 615, en: "wildlife", ja: "野生動物", context: "see wildlife in Alaska" },
+        { id: 616, en: "accompany", ja: "同行する、付いてくる、伴奏する", context: "I will accompany him to the airport." },
+        { id: 617, en: "average", ja: "平均、平均的な", context: "below average" },
+        { id: 618, en: "chart", ja: "図表、一覧表", context: "make a chart" },
+        { id: 619, en: "complaint", ja: "苦情、クレーム", context: "receive customer complaints" },
+        { id: 620, en: "insurance", ja: "保険", context: "Don’t forget to bring your insurance card." },
+        { id: 621, en: "lecture", ja: "講義", context: "listen to a lecture" },
+        { id: 622, en: "satisfied", ja: "満足した", context: "I was satisfied with the service." },
+        { id: 623, en: "unique", ja: "他にはない、独自の、特別な、特有の", context: "have a unique idea" },
+        { id: 624, en: "guarantee", ja: "保証する、保証", context: "guarantee low prices" },
+        { id: 625, en: "device", ja: "機器、装置", context: "home security devices" },
+        { id: 626, en: "entire", ja: "全体の、全部の", context: "for the entire month of April" },
+        { id: 627, en: "exciting", ja: "(人を)わくわくさせる", context: "I have some exciting news for you." },
+        { id: 628, en: "ideal", ja: "理想的な", context: "an ideal place to work" },
+        { id: 629, en: "industrial", ja: "産業の", context: "industrial development" },
+        { id: 630, en: "transfer", ja: "転勤させる(する)、移動させる(する)、転勤、移動", context: "Tex was transferred to Moscow." },
+        { id: 631, en: "agricultural", ja: "農業の", context: "agricultural products" },
+        { id: 632, en: "edition", ja: "(本、雑誌、新聞等の)版", context: "the Sunday edition of a newspaper" },
+        { id: 633, en: "historical", ja: "歴史(上)の", context: "historical facts" },
+        { id: 634, en: "preparation", ja: "準備、用意", context: "in preparation for a trip to Europe" },
+        { id: 635, en: "environment", ja: "環境", context: "create a safe work environment" },
+        { id: 636, en: "growth", ja: "成長", context: "the growth of a company" },
+        { id: 637, en: "related", ja: "関連した", context: "related work experience" },
+        { id: 638, en: "temperature", ja: "温度、気温", context: "sunny weather and high temperatures" },
+        { id: 639, en: "decade", ja: "10年間、10年", context: "over the past decade" },
+        { id: 640, en: "frequent", ja: "頻繁な、常連の", context: "She is a frequent customer." },
+        { id: 641, en: "landscaping", ja: "造園", context: "contact a landscaping company" },
+        { id: 642, en: "significant", ja: "かなりの、大幅な、重要な", context: "spend a significant amount of money" },
+        { id: 643, en: "task", ja: "任務、業務、仕事", context: "complete a task" },
+        { id: 644, en: "complex", ja: "複合施設、集合住宅、複雑な", context: "build a housing complex" },
+        { id: 645, en: "delighted", ja: "とても喜んでいる", context: "I am delighted to meet you." },
+        { id: 646, en: "guided", ja: "ガイド付きの", context: "task a guided tour" },
+        { id: 647, en: "properly", ja: "ちゃんと、適切に", context: "My computer is not working properly." },
+        { id: 648, en: "scale", ja: "規模、尺度、ハカリ", context: "a large-scale project" },
+        { id: 649, en: "signature", ja: "署名、特徴的な", context: "I need your signature on the form." },
+        { id: 650, en: "entry", ja: "エントリー(作品)、入場、入力", context: "judge the entries" },
+        { id: 651, en: "initial", ja: "初めの、当初の、頭文字", context: "place the initial order" },
+        { id: 652, en: "inn", ja: "宿、ホテル", context: "stay at an inn" },
+        { id: 653, en: "renovate", ja: "改装する", context: "a newly renovated hotel" },
+        { id: 654, en: "advanced", ja: "進んだ、上級の、高度な", context: "use advanced technology" },
+        { id: 655, en: "background", ja: "経歴、背景", context: "He has a background in sales." },
+        { id: 656, en: "full-time", ja: "常勤の、正社員の", context: "a full-time position" },
+        { id: 657, en: "graduate", ja: "卒業する、卒業生", context: "graduate from a university" },
+        { id: 658, en: "loan", ja: "融資、貸付(金)、貸し付ける", context: "apply for a loan" },
+        { id: 659, en: "recognize", ja: "(人を)称える、(業務等を)認める、識別する", context: "recognize employees" },
+        { id: 660, en: "specific", ja: "具体的な、特定の", context: "specific groups" },
+        { id: 661, en: "alternative", ja: "代わりの、代わりのもの", context: "look for an alternative method" },
+        { id: 662, en: "brief", ja: "短時間、手短な", context: "a brief meeting" },
+        { id: 663, en: "definitely", ja: "間違いなく、絶対に", context: "I definitely recommend it." },
+        { id: 664, en: "emphasize", ja: "強調する", context: "She emphasized the importance of the training." },
+        { id: 665, en: "fold", ja: "折りたたむ", context: "He’s folding his jacket." },
+        { id: 666, en: "jewelry", ja: "宝飾品、宝石類", context: "open a jewelry store" },
+        { id: 667, en: "appeal", ja: "魅力がある、アピールする、魅力、アピール", context: "The book appeals to children." },
+        { id: 668, en: "chemical", ja: "化学物質、化学品、化学の", context: "handle chemicals" },
+        { id: 669, en: "concerning", ja: "～に関する", context: "I have some questions concerning the interview." },
+        { id: 670, en: "decrease", ja: "減る、減らす、現象、低下", context: "The number of tourists decreased last year." },
+        { id: 671, en: "sometime", ja: "いつか", context: "I’ll take a vacation sometime in August." },
+        { id: 672, en: "various", ja: "さまざまな", context: "The product is available in various colors." },
+        { id: 673, en: "venue", ja: "会場", context: "a concert venue" },
+        { id: 674, en: "anniversary", ja: "～周年、記念日", context: "celebrate the 10th anniversary" },
+        { id: 675, en: "associate", ja: "仲間、アシスタント、準、副、関連付ける", context: "He is my business associate." },
+        { id: 676, en: "automatically", ja: "自動的に", context: "The doors look automatically." },
+        { id: 677, en: "confident", ja: "確信している、自信がある", context: "We are confident that we will win." },
+        { id: 678, en: "outstanding", ja: "抜きんでた、未払いの", context: "outstanding customer service" },
+        { id: 679, en: "overall", ja: "全体の、全体として", context: "the overall cost of a project" },
+        { id: 680, en: "reputation", ja: "評判", context: "build a good reputation" },
+        { id: 681, en: "achieve", ja: "達成する", context: "achieve a goal" },
+        { id: 682, en: "diet", ja: "食事、食べ物、ダイエット", context: "eat a balanced diet" },
+        { id: 683, en: "explore", ja: "調査する、探索する、散策する", context: "explore a city" },
+        { id: 684, en: "grant", ja: "補助金、助成金、与える、許可する", context: "apply for a grant" },
+        { id: 685, en: "particularly", ja: "特に", context: "She is particularly popular with young people." },
+        { id: 686, en: "suitable", ja: "ふさわしい、適切な", context: "This film is suitable for young children." },
+        { id: 687, en: "appropriate", ja: "適切な、適した", context: "take appropriate action" },
+        { id: 688, en: "assure", ja: "保証する、請け負う", context: "We assure you that sales will improve." },
+        { id: 689, en: "decline", ja: "(丁寧に)断る、下降する、下降", context: "decline a job offer" },
+        { id: 690, en: "decorate", ja: "飾る", context: "decorate a room" },
+        { id: 691, en: "minimum", ja: "最低限、最小限、最低限の、最小限の", context: "a minimum of five years of experience" },
+        { id: 692, en: "source", ja: "源", context: "a source of water" },
+        { id: 693, en: "basis", ja: "ベース、基準、根拠", context: "pay on a yearly basis" },
+        { id: 694, en: "challenge", ja: "(やりがいのある)困難、試練、異議を唱える", context: "meet a challenge" },
+        { id: 695, en: "observe", ja: "気付く、順守する、観察する", context: "observe nature" },
+        { id: 696, en: "occur", ja: "起こる、発生する、行われる", context: "What will occur next week?" },
+        { id: 697, en: "overnight", ja: "一晩の、翌日配送の、一晩", context: "an overnight delivery" },
+        { id: 698, en: "simply", ja: "単純に、単に", context: "I simply forgot about it." },
+        { id: 699, en: "aspect", ja: "面、局面", context: "every aspect of business" },
+        { id: 700, en: "athletic", ja: "運動の、運動が得意な、アスリートの", context: "athletic footwear" }
     ];
 
     let currentQuestions = [];
+    let baseWordList = []; // 出題範囲に基づくベースリスト
     let currentIndex = 0;
     let results = [];
     let selectedMode = 'mix';
-    let currentResult = null; // その問題の判定結果を一時保存
+    let currentResult = null; 
 
     // タイマー用変数
     let startTime;
     let timerInterval;
 
     function startGame() {
+        // 出題範囲の選択処理
+        let selectedRange = document.getElementById('range').value;
+        if (selectedRange === 'fm') {
+            baseWordList = [...fmWords];
+        } else if (selectedRange === 'ff') {
+            baseWordList = [...ffWords];
+        } else {
+            baseWordList = [...fmWords, ...ffWords];
+        }
+
         selectedMode = document.getElementById('mode').value;
         let count = parseInt(document.getElementById('count').value);
 
-        let shuffled = [...wordList].sort(() => Math.random() - 0.5);
-        currentQuestions = shuffled.slice(0, Math.min(count, wordList.length));
+        let shuffled = [...baseWordList].sort(() => Math.random() - 0.5);
+        currentQuestions = shuffled.slice(0, Math.min(count, baseWordList.length));
 
         currentIndex = 0;
         results = [];
@@ -260,7 +384,7 @@
         let q = currentQuestions[currentIndex];
         let qMode = selectedMode;
         
-        // MIXモードの場合は、書き(入力), 書き(簡単), 読み の中からランダムで出題
+        // MIXモードのランダム決定
         if (qMode === 'mix') {
             let rand = Math.random();
             if (rand < 0.33) {
@@ -282,27 +406,33 @@
             // 書き（テキスト入力）
             container.innerHTML = `
                 <p>次の意味を持つ英単語（原形）を入力してください</p>
-                <div class="question-text">${q.ja}</div>
+                <div class="question-text">
+                    <span class="question-id">No.${q.id}</span>
+                    ${q.ja}
+                </div>
                 <div class="context-text">(${maskedContext})</div>
                 <div class="hint">💡 ヒント：頭文字は「${q.en.charAt(0)}」 （全${q.en.length}文字）</div>
                 <input type="text" id="write-answer" placeholder="英単語を入力" autocomplete="off" autocorrect="off" autocapitalize="off">
-                <button onclick="checkWriteAnswer('${q.en}', '${q.ja}')">解答する</button>
+                <button onclick="checkWriteAnswer('${q.en}', '${q.ja}', ${q.id})">解答する</button>
             `;
             setTimeout(() => document.getElementById('write-answer').focus(), 100);
             
         } else if (qMode === 'write_easy') {
             // 書き（簡単：英単語の4択）
             let choices = [q.en];
-            let wrongChoices = wordList.filter(w => w.en !== q.en).sort(() => Math.random() - 0.5).slice(0, 3).map(w => w.en);
+            let wrongChoices = baseWordList.filter(w => w.en !== q.en).sort(() => Math.random() - 0.5).slice(0, 3).map(w => w.en);
             choices = choices.concat(wrongChoices).sort(() => Math.random() - 0.5);
 
             let choicesHtml = choices.map(choice => 
-                `<button class="choice-btn" onclick="checkWriteEasyAnswer('${choice}', '${q.en}', '${q.ja}')">${choice}</button>`
+                `<button class="choice-btn" onclick="checkWriteEasyAnswer('${choice}', '${q.en}', '${q.ja}', ${q.id})">${choice}</button>`
             ).join('');
 
             container.innerHTML = `
                 <p>次の意味を持つ英単語を選択してください</p>
-                <div class="question-text">${q.ja}</div>
+                <div class="question-text">
+                    <span class="question-id">No.${q.id}</span>
+                    ${q.ja}
+                </div>
                 <div class="context-text">(${maskedContext})</div>
                 ${choicesHtml}
             `;
@@ -310,38 +440,41 @@
         } else {
             // 読み（意味の4択）
             let choices = [q.ja];
-            let wrongChoices = wordList.filter(w => w.ja !== q.ja).sort(() => Math.random() - 0.5).slice(0, 3).map(w => w.ja);
+            let wrongChoices = baseWordList.filter(w => w.ja !== q.ja).sort(() => Math.random() - 0.5).slice(0, 3).map(w => w.ja);
             choices = choices.concat(wrongChoices).sort(() => Math.random() - 0.5);
 
             let choicesHtml = choices.map(choice => 
-                `<button class="choice-btn" onclick="checkReadAnswer('${choice}', '${q.ja}', '${q.en}')">${choice}</button>`
+                `<button class="choice-btn" onclick="checkReadAnswer('${choice}', '${q.ja}', '${q.en}', ${q.id})">${choice}</button>`
             ).join('');
 
             container.innerHTML = `
                 <p>次の英単語の意味を選択してください</p>
-                <div class="question-text">${q.en}</div>
+                <div class="question-text">
+                    <span class="question-id">No.${q.id}</span>
+                    ${q.en}
+                </div>
                 <div class="context-text">(${q.context})</div>
                 ${choicesHtml}
             `;
         }
     }
 
-    function checkWriteAnswer(correctEn, ja) {
+    function checkWriteAnswer(correctEn, ja, id) {
         let input = document.getElementById('write-answer').value.trim().toLowerCase();
         let isCorrect = (input === correctEn.toLowerCase());
-        currentResult = { type: '書き', question: ja, correct: correctEn, userAnswer: input, isCorrect: isCorrect };
+        currentResult = { id: id, type: '書き', question: ja, correct: correctEn, userAnswer: input, isCorrect: isCorrect };
         showFeedback();
     }
 
-    function checkWriteEasyAnswer(userChoice, correctEn, ja) {
+    function checkWriteEasyAnswer(userChoice, correctEn, ja, id) {
         let isCorrect = (userChoice === correctEn);
-        currentResult = { type: '書き(簡単)', question: ja, correct: correctEn, userAnswer: userChoice, isCorrect: isCorrect };
+        currentResult = { id: id, type: '書き(簡単)', question: ja, correct: correctEn, userAnswer: userChoice, isCorrect: isCorrect };
         showFeedback();
     }
 
-    function checkReadAnswer(userChoice, correctJa, en) {
+    function checkReadAnswer(userChoice, correctJa, en, id) {
         let isCorrect = (userChoice === correctJa);
-        currentResult = { type: '読み', question: en, correct: correctJa, userAnswer: userChoice, isCorrect: isCorrect };
+        currentResult = { id: id, type: '読み', question: en, correct: correctJa, userAnswer: userChoice, isCorrect: isCorrect };
         showFeedback();
     }
 
@@ -404,7 +537,7 @@
             let mark = r.isCorrect ? '<span class="correct-mark">◯ 正解</span>' : '<span class="incorrect-mark">✕ 不正解</span>';
             return `
                 <div class="result-item">
-                    <div><strong>Q${index + 1}. [${r.type}]</strong> ${r.question}</div>
+                    <div><strong>Q${index + 1}. [No.${r.id} / ${r.type}]</strong> ${r.question}</div>
                     <div>${mark}</div>
                     <div>あなたの解答: ${r.userAnswer || '(未入力)'}</div>
                     ${!r.isCorrect ? `<div class="correct-mark">正しい解答: ${r.correct}</div>` : ''}
